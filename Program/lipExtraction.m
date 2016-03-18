@@ -1,29 +1,22 @@
 function lipFrame = lipExtraction(rawFrame)
 %lipExtraction Extract the lips from an RGB image and returns a Black&White image 
 %   Detailed explanation goes here
-
-    %% Reformat input frame
-    resize = 1;
-    
-    if resize == 0
-        resizedFrame = rawFrame;
-    elseif resize == 1
-        resizedFrame = imresize(rawFrame, [240 320]);
-    end
-    
-    frame = im2double(resizedFrame);
        
     %% Transform RGB to B&W image
+    frame = rawFrame;
     bwFrame = log( frame(:,:,1) ./ (frame(:,:,2) + 1.0e-8) );
 
-    mid3 = bwFrame(:);
-    mid4 = sort(mid3);
-    greyThres = mid4(end-floor(length(mid4)*0.1));
+    greyThres = graythresh(bwFrame);    % Relies on Otsu's grey histogram method
+    greyThres = greyThres *1.2;         % Increase differentiation
+    
+%     mid3 = bwFrame(:);
+%     mid4 = sort(mid3);
+%     greyThres = mid4(end-floor(length(mid4)*0.1));
     
     bwFrame( bwFrame <= greyThres ) = 0;
     bwFrame( bwFrame > greyThres ) = 1;
 
-    figure;imshow(bwFrame);
+%     figure;imshow(bwFrame);
     
     %% Filter out non-lip connected objects
     [numRows, numCols] = size(bwFrame);
@@ -60,5 +53,5 @@ function lipFrame = lipExtraction(rawFrame)
     end
 %     lipFrame = lipFrame.* bwFrame;
     
-    figure; imshow(lipFrame);
+%     figure; imshow(lipFrame);
 end
