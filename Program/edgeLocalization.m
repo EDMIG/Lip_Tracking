@@ -1,4 +1,4 @@
-function edgeLocalization(raw_binary,raw_image)
+function lipLine = edgeLocalization(raw_binary,raw_image)
     
     numPoints = 15;
     I = zeros(size(raw_binary));
@@ -11,15 +11,16 @@ function edgeLocalization(raw_binary,raw_image)
             dot = [dot;i,min(mid),max(mid)];
         end
     end
-    figure;imshow(raw_image);
-    hold on;
     
-    lipLine = [dot(:,1) , dot(:,2) ;
-               flip(dot(:,1)) , flip(dot(:,3)) 
-               dot(1,1) , dot(1,2)];
-         
-    plot(lipLine(:,1), lipLine(:,2), '-go');
-           
+    lipLine = [ dot(:,1) , dot(:,2) ;
+                flip(dot(:,1)) , flip(dot(:,3)) 
+                dot(1,1) , dot(1,2)];
+    
+%     figure;imshow(raw_image);
+%     hold on;
+%     
+%     plot(lipLine(:,1), lipLine(:,2), '-go');
+%            
 %     plot(dot(:,1),dot(:,2),'-go');
 %     plot(dot(:,1),dot(:,3),'-go');
     
