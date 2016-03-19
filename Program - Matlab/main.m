@@ -10,7 +10,7 @@
 close all;
 
 % Load a video
-videoFile = strcat(currentFolder, '\..\Data\allo_video.avi');
+videoFile = strcat(pwd, '\..\Data\allo_video.avi');
 video = VideoReader(videoFile);
 
 % currentFolder = pwd;
