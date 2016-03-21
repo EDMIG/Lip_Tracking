@@ -39,7 +39,7 @@ private:
     void startLipTracking(QString videoFilePath);
     Mat extractLipsAsBWImg(Mat &frame);
     QPixmap getPixmap(Mat &frame);
-    void printMat(Mat &frame);
+    void printMatFloat(Mat &frame, QString filename);
 };
 
 #endif // MAINWINDOW_H
