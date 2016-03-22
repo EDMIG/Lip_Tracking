@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include <qcustomplot.h>
+#include <webcamreader.h>
+#include <QThread>
 
 // OpenCV
 #include<opencv2/core/core.hpp>
@@ -24,7 +26,9 @@ public:
 
 private slots:
     void on_selectVideoButton_clicked();
+    void on_webcamButton_clicked();
     void on_frameSlider_valueChanged(int value);
+    void startLipTracking(Mat* frame);
 
 private:
     Ui::MainWindow *ui;
@@ -36,8 +40,10 @@ private:
 
     QCPCurve *lipsCurve;
 
+    QThread *webcamThread = 0;
+    WebCamReader *webcam = 0;
+
 private:
-    void startLipTracking(QString videoFilePath);
     Mat extractLipsAsBWImg(Mat &frame);
     QVector<QPoint> extractPointsOnLipsEdge(Mat &binaryImg);
     void setLipsCurve();

@@ -8,6 +8,8 @@
 #include <qmath.h>
 #include <QFile>
 
+
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
@@ -21,21 +23,26 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     setLipsCurve();
 }
 
+
 void MainWindow::on_selectVideoButton_clicked()
 {
     /* Get a video filepath by prompting a file explorer window
      * and set default folde to Data */
+
+    if (webcamThread) {
+        webcam->stop();
+        webcamThread->exit();
+//        webcamThread->wait();
+    }
+
+    ui->frameSlider->setEnabled(true);
 
     QString defaultPath = "C:/Users/nsebkhi3/GitHub/Perso/Lip_Tracking/Data";
 
     QString videoFilePath = QFileDialog::getOpenFileName(this,
                                                     tr("Open Video"), defaultPath, tr("Video Files (*.avi)"));
     ui->videoFilePathText->setText(videoFilePath);
-    startLipTracking(videoFilePath);
-}
 
-void MainWindow::startLipTracking(QString videoFilePath)
-{
     /* Open the video and set the slider length to the num of frames
      * Return if video cannot be opened */
 
@@ -55,11 +62,40 @@ void MainWindow::startLipTracking(QString videoFilePath)
 
 void MainWindow::on_frameSlider_valueChanged(int value)
 {
-    lipsCurve->clearData();
-
     // Get the frame associated to the slider value
     video.set(CAP_PROP_POS_FRAMES, value);
+
+    Mat frame;
     video >> frame;
+
+    startLipTracking(&frame);
+}
+
+
+void MainWindow::on_webcamButton_clicked()
+{
+    ui->frameSlider->setEnabled(false);
+
+    webcam = new WebCamReader();
+
+    webcamThread = new QThread();
+    webcam->moveToThread(webcamThread);
+
+    connect(webcamThread, SIGNAL(started()), webcam, SLOT(run()));
+    connect(webcam, SIGNAL(newFrame(Mat*)), this, SLOT(startLipTracking(Mat*)));
+    connect(webcamThread, SIGNAL(finished()), webcam, SLOT(stop()), Qt::DirectConnection);
+    connect(webcamThread, SIGNAL(finished()), webcam, SLOT(deleteLater()));
+
+    webcamThread->start();
+}
+
+
+
+void MainWindow::startLipTracking(Mat *framePtr)
+{
+    lipsCurve->clearData();
+
+    Mat frame = *framePtr;
 
     // Lower frame resolution to reduce execution time
     cv::resize(frame, frame, Size(320, 240), 0, 0, INTER_AREA);
@@ -87,8 +123,9 @@ void MainWindow::on_frameSlider_valueChanged(int value)
     ui->finalImage->axisRect()->setBackground(finalPixmap);
 
     ui->finalImage->replot();
-
 }
+
+
 
 /**
  * @brief Construct a binary image with lips pixels as white (255) and others as black (0)
@@ -285,3 +322,5 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+
+

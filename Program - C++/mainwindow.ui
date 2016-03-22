@@ -82,6 +82,19 @@
      <bool>true</bool>
     </property>
    </widget>
+   <widget class="QPushButton" name="webcamButton">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>550</y>
+      <width>471</width>
+      <height>91</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Webcam</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
