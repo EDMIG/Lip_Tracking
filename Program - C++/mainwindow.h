@@ -23,23 +23,20 @@ public:
 
 private slots:
     void on_selectVideoButton_clicked();
-
     void on_frameSlider_valueChanged(int value);
 
 private:
     Ui::MainWindow *ui;
-    QString videoFilePath;
     VideoCapture video;
     Mat frame;
 
-    int height;
-    int width;
+    int bwHeight, bwWidth;
+    int finalHeight, finalWidth ;
 
 private:
     void startLipTracking(QString videoFilePath);
     Mat extractLipsAsBWImg(Mat &frame);
-    QPixmap getPixmap(Mat &frame);
-    void printMatFloat(Mat &frame, QString filename);
+    void printMat(Mat &frame, QString filename);
 };
 
 #endif // MAINWINDOW_H
