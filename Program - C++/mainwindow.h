@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <qcustomplot.h>
 
 // OpenCV
 #include<opencv2/core/core.hpp>
@@ -31,11 +32,15 @@ private:
     Mat frame;
 
     int bwHeight, bwWidth;
-    int finalHeight, finalWidth ;
+    int finalHeight, finalWidth;
+
+    QCPCurve *lipsCurve;
 
 private:
     void startLipTracking(QString videoFilePath);
     Mat extractLipsAsBWImg(Mat &frame);
+    QVector<QPoint> extractPointsOnLipsEdge(Mat &binaryImg);
+    void setLipsCurve();
     void printMat(Mat &frame, QString filename);
 };
 

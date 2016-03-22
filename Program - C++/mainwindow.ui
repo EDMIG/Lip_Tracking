@@ -33,25 +33,6 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QLabel" name="finalImage">
-    <property name="geometry">
-     <rect>
-      <x>580</x>
-      <y>100</y>
-      <width>351</width>
-      <height>311</height>
-     </rect>
-    </property>
-    <property name="autoFillBackground">
-     <bool>false</bool>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">Background-color: #000;</string>
-    </property>
-    <property name="text">
-     <string>TextLabel</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="selectVideoButton">
     <property name="geometry">
      <rect>
@@ -88,9 +69,30 @@
      <enum>Qt::Horizontal</enum>
     </property>
    </widget>
+   <widget class="QCustomPlot" name="finalImage" native="true">
+    <property name="geometry">
+     <rect>
+      <x>610</x>
+      <y>90</y>
+      <width>341</width>
+      <height>331</height>
+     </rect>
+    </property>
+    <property name="autoFillBackground">
+     <bool>true</bool>
+    </property>
+   </widget>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>QCustomPlot</class>
+   <extends>QWidget</extends>
+   <header>qcustomplot.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
