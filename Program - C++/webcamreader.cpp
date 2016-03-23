@@ -1,7 +1,8 @@
 #include "webcamreader.h"
 #include <QCameraInfo>
+#include <QMutexLocker>
 
-WebCamReader::WebCamReader(QObject *parent) : QObject(parent)
+WebCamReader::WebCamReader(QObject *parent) : QThread(parent)
 {
     // Find index of TTS supported camera in the list of connected cameras
     QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
@@ -24,6 +25,7 @@ WebCamReader::WebCamReader(QObject *parent) : QObject(parent)
     exec = true;
 }
 
+
 void WebCamReader::run(){
 
     Mat frame;
@@ -41,5 +43,7 @@ void WebCamReader::run(){
 }
 
 void WebCamReader::stop() {
+    mutex.lock();
     exec = false;
+    mutex.unlock();
 }

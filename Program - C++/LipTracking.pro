@@ -15,11 +15,13 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     qcustomplot.cpp \
-    webcamreader.cpp
+    webcamreader.cpp \
+    processframe.cpp
 
 HEADERS  += mainwindow.h \
     qcustomplot.h \
-    webcamreader.h
+    webcamreader.h \
+    processframe.h
 
 FORMS    += mainwindow.ui
 

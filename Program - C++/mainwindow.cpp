@@ -21,6 +21,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     finalWidth  = ui->finalImage->width();
 
     setLipsCurve();
+
+//    webcamThread = new QThread(this);
+//    connect(this, SIGNAL(stopWebcam()), webcamThread, SLOT(quit()));
 }
 
 
@@ -29,18 +32,12 @@ void MainWindow::on_selectVideoButton_clicked()
     /* Get a video filepath by prompting a file explorer window
      * and set default folde to Data */
 
-    if (webcamThread) {
-        webcam->stop();
-        webcamThread->exit();
-//        webcamThread->wait();
-    }
 
     ui->frameSlider->setEnabled(true);
 
     QString defaultPath = "C:/Users/nsebkhi3/GitHub/Perso/Lip_Tracking/Data";
 
-    QString videoFilePath = QFileDialog::getOpenFileName(this,
-                                                    tr("Open Video"), defaultPath, tr("Video Files (*.avi)"));
+    QString videoFilePath = QFileDialog::getOpenFileName(this, "Open Video", defaultPath, "Video Files (*.avi)");
     ui->videoFilePathText->setText(videoFilePath);
 
     /* Open the video and set the slider length to the num of frames
@@ -72,48 +69,27 @@ void MainWindow::on_frameSlider_valueChanged(int value)
 }
 
 
-void MainWindow::on_webcamButton_clicked()
-{
-    ui->frameSlider->setEnabled(false);
-
-    webcam = new WebCamReader();
-
-    webcamThread = new QThread();
-    webcam->moveToThread(webcamThread);
-
-    connect(webcamThread, SIGNAL(started()), webcam, SLOT(run()));
-    connect(webcam, SIGNAL(newFrame(Mat*)), this, SLOT(startLipTracking(Mat*)));
-    connect(webcamThread, SIGNAL(finished()), webcam, SLOT(stop()), Qt::DirectConnection);
-    connect(webcamThread, SIGNAL(finished()), webcam, SLOT(deleteLater()));
-
-    webcamThread->start();
-}
-
-
-
 void MainWindow::startLipTracking(Mat *framePtr)
 {
-    lipsCurve->clearData();
+    ProcessFrame *procFrame = new ProcessFrame(*framePtr, this);
 
-    Mat frame = *framePtr;
+    connect(procFrame, SIGNAL(binaryImg(Mat)), this, SLOT(updateBinaryImage(Mat)));
+    connect(procFrame, SIGNAL(lipsPos(Mat,QVector<QPoint>)), this, SLOT(updateFinalImage(Mat,QVector<QPoint>)));
+    connect(procFrame, SIGNAL(finished()), procFrame, SLOT(deleteLater()));
+    procFrame->start();
+}
 
-    // Lower frame resolution to reduce execution time
-    cv::resize(frame, frame, Size(320, 240), 0, 0, INTER_AREA);
-
-    // OpenCV frame color format is by default BGR. Invert color to RGB for display
-    cv::cvtColor(frame, frame, CV_BGR2RGB);
-
-    // Process frame to extract a lips into a binary image
-    Mat bwFrame         = extractLipsAsBWImg(frame);
-
-    QImage bwImg        = QImage((uchar*)bwFrame.data, bwFrame.cols, bwFrame.rows, bwFrame.step, QImage::Format_Grayscale8);
+void MainWindow::updateBinaryImage(Mat frame) {
+    QImage bwImg        = QImage((uchar*)frame.data, frame.cols, frame.rows, frame.step, QImage::Format_Grayscale8);
     QPixmap bwPixmap    = QPixmap::fromImage(bwImg).scaled(bwWidth, bwHeight);
     ui->bwImage->setPixmap(bwPixmap);
+}
 
-    // Process binary image to localize points on the lip boundaries
-    QVector<QPoint> lipsPoints  = extractPointsOnLipsEdge(bwFrame);
+void MainWindow::updateFinalImage(Mat frame, QVector<QPoint> lipsPos) {
 
-    foreach (QPoint point, lipsPoints) {
+    lipsCurve->clearData();
+
+    foreach (QPoint point, lipsPos) {
         lipsCurve->addData(point.x(), point.y());
     }
 
@@ -121,143 +97,7 @@ void MainWindow::startLipTracking(Mat *framePtr)
     QPixmap finalPixmap    = QPixmap::fromImage(finalImg).scaled(finalWidth, finalHeight);
 
     ui->finalImage->axisRect()->setBackground(finalPixmap);
-
     ui->finalImage->replot();
-}
-
-
-
-/**
- * @brief Construct a binary image with lips pixels as white (255) and others as black (0)
- * @param frame RGB image
- * @return binary image
- */
-Mat MainWindow::extractLipsAsBWImg(Mat &frame)
-{
-    // Create a copy of frame with float as data type
-    // Needed for Red color extraction algorithm
-    Mat formattedFrame(frame.rows, frame.cols, CV_32FC3);
-    frame.convertTo(formattedFrame, CV_32FC3, 1.0/255.0);
-
-    // Split the image into different color channels
-    std::vector<Mat> rgbChannels;
-    cv::split(formattedFrame, rgbChannels);
-
-    Mat redChannel = rgbChannels[0];
-    Mat greenChannel = rgbChannels[1];
-
-    // Apply the lips extraction filter based on Red pixels differentiation
-    Mat bwFrame(frame.rows, frame.cols, CV_32FC1);
-    cv::add(greenChannel, 0.000001, bwFrame);
-    cv::divide(redChannel, bwFrame, bwFrame);
-    cv::log(bwFrame, bwFrame);
-
-    // Compute the threshold to render lips-like area to white and other areas to black
-    Mat frameVect;
-    bwFrame.reshape(0, 1).copyTo(frameVect);            // Flatten out the frame into a row vector
-    cv::sort(frameVect, frameVect, CV_SORT_ASCENDING);
-    double thres_coeff = 0.18;                          // Variable that sets strength of discrimination (lower = more discrimination)
-    int threshIdx = (frameVect.cols - 1) - qFloor(frameVect.cols * thres_coeff);
-    float thresVal = frameVect.at<float>(0, threshIdx);
-
-    // Create the binary image
-    Mat bwFrameProc = bwFrame > thresVal;
-    printMat(bwFrame, "bwFrame.txt");
-
-    // Keep only the biggest agglomerate of white pixels as more likely related to lips
-    Mat connCompLabels, connCompStats, connCompCentroids;
-    cv::connectedComponentsWithStats(bwFrameProc, connCompLabels, connCompStats, connCompCentroids, 8, CV_16U);
-    printMat(connCompLabels, "connCompLabels.txt");
-    printMat(connCompStats, "connCompStats.txt");
-
-    int widerConnComp[2] = {0 , 0};                     // Format: (label , numPixels)
-
-    for (int i = 1; i < connCompStats.rows; i++) {      // Start from 1 to ignore background (black pixels)
-
-        int numPixels = static_cast<int>(connCompStats.at<char32_t>(i, 4));
-
-        if (numPixels >= widerConnComp[1]) {
-            widerConnComp[0] = i;
-            widerConnComp[1] = numPixels;
-        }
-    }
-
-    Mat bwFrameFiltered = (connCompLabels == widerConnComp[0]);
-    printMat(bwFrameFiltered, "bwFrameFiltered.txt");
-
-    // Return a binary image with only the lips as white pixels
-    return bwFrameFiltered;
-}
-
-/**
- * @brief Identify points on the boundary of the lips from the lips binary image
- * @param binaryImg Binary image of the lips
- * @return Vector of points on the boundary of the lips
- */
-QVector<QPoint> MainWindow::extractPointsOnLipsEdge(Mat &binaryImg)
-{
-    // Two data structures are needed as 2 points exists for a same column
-    QVector<QPoint> upperLipPts;
-    QVector<QPoint> lowerLipPts;
-
-    // Skip columns to reduce execution time
-    int colsDownSampling = 50;
-    int numColsPerScan = binaryImg.cols / colsDownSampling;
-
-    // Scan each selected columns
-    for (int colIdx = 0; colIdx < binaryImg.cols; colIdx += numColsPerScan) {
-
-        bool upperLipFound = false;
-        bool lowerLipFound = false;
-        QPoint lowerPoint;
-
-        // Scan each row
-        for (int rowIdx = 0; rowIdx < binaryImg.rows; rowIdx++) {
-
-            int pixelIntensity = static_cast<int>(binaryImg.at<uchar>(rowIdx, colIdx));
-
-            // Append first point where black pixel changes to white (upper lip)
-            if ( pixelIntensity == 255 && !upperLipFound) {
-                upperLipPts.append(QPoint(colIdx, rowIdx));
-                upperLipFound = true;
-            }
-
-            // Create a point at the location where a white pixel changes to black (lower lip)
-            else if ( pixelIntensity == 0 && upperLipFound && !lowerLipFound ) {
-                lowerPoint.setX(colIdx);
-                lowerPoint.setY(rowIdx);
-                lowerLipFound = true;
-            }
-
-            // Manages cases where a black patch of pixels exists between upper and lower lips
-            else if (lowerLipFound && pixelIntensity == 255) {
-                lowerLipFound = false;
-            }
-        }
-
-        // Add lower point if found
-        if(!lowerPoint.isNull()) {
-            lowerLipPts.push_front(lowerPoint); // Push to front to make line creation easier
-        }
-
-        // Add pixel of last row as lower lip if not found
-        if (upperLipFound && !lowerLipFound) {
-            lowerLipPts.push_front(QPoint(colIdx, binaryImg.rows - 1));
-        }
-    }
-
-
-    QVector<QPoint> lipsPoints;
-
-    foreach (QPoint point, upperLipPts) {
-        lipsPoints.append(point);
-    }
-
-    foreach (QPoint point, lowerLipPts) {
-        lipsPoints.append(point);
-    }
-
-    return lipsPoints;
 }
 
 void MainWindow::setLipsCurve()
@@ -324,3 +164,27 @@ MainWindow::~MainWindow()
 }
 
 
+
+void MainWindow::on_webcamButton_clicked(bool checked)
+{
+    if (checked) {
+
+        ui->frameSlider->setEnabled(false);
+
+        webcam = new WebCamReader();
+
+        connect(webcam, SIGNAL(newFrame(Mat*)), this, SLOT(startLipTracking(Mat*)));
+//        connect(this, SIGNAL(stopWebcam()), webcam, SLOT(stop()), Qt::DirectConnection);
+        connect(webcam, SIGNAL(finished()), webcam, SLOT(deleteLater()));
+
+        webcam->start();
+
+        ui->webcamButton->setText("Stop Webcam");
+    }
+
+    else {
+
+        webcam->stop();
+        ui->webcamButton->setText("Start Webcam");
+    }
+}
