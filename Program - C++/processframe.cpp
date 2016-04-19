@@ -1,13 +1,33 @@
+/* **************************************************************
+ * This class extracts the boundary of the lips in a video frame
+ *
+ * Author: Nordine Sebkhi
+ * **************************************************************/
+
 #include "processframe.h"
 #include <QVector>
 #include <QPoint>
 #include <qmath.h>
 
+
+/**
+ * @brief Constructor that sets the frame to be processed
+ * @param frame a video frame (cv::Mat object)
+ * @param parent
+ */
 ProcessFrame::ProcessFrame(Mat frame,  QObject *parent) : QThread(parent)
 {
     this->frame = frame;
 }
 
+
+/**
+ * @brief Process a video frame
+ * Lower resolution to reduce processing time
+ * Convert the color scheme to standard RGB (openCV saves frames in another color order)
+ * Produce a black & white image with lips in white
+ * Locate lips boundary
+ */
 void ProcessFrame::run()
 {
     // Lower frame resolution to reduce execution time
@@ -24,7 +44,6 @@ void ProcessFrame::run()
     QVector<QPoint> lipsPoints  = extractPointsOnLipsEdge(bwFrame);
     emit lipsPos(frame, lipsPoints);
 }
-
 
 
 /**
@@ -84,6 +103,7 @@ Mat ProcessFrame::extractLipsAsBWImg(Mat &frame)
     // Return a binary image with only the lips as white pixels
     return bwFrameFiltered;
 }
+
 
 /**
  * @brief Identify points on the boundary of the lips from the lips binary image

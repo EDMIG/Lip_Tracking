@@ -7,15 +7,17 @@
 #include <processframe.h>
 #include <QThread>
 
-// OpenCV
+// Include OpenCV neeeded headers
 #include<opencv2/core/core.hpp>
 #include<opencv2/highgui/highgui.hpp>
 #include<opencv2/imgproc/imgproc.hpp>
 using namespace cv;
 
+// Register OpenCV and custom classes to be used in Signal/Slot connection
+// Note: cannot compile if returned values are not assigned to a constant int
 const int dontcare1 = qRegisterMetaType<Mat>("Mat");
-const int dontcare = qRegisterMetaType<Mat*>("Mat*");
-const int dontcare2 = qRegisterMetaType< QVector<QPoint> >("QVector<QPoint>");
+const int dontcare2  = qRegisterMetaType<Mat*>("Mat*");
+const int dontcare3 = qRegisterMetaType< QVector<QPoint> >("QVector<QPoint>");
 
 namespace Ui {
 class MainWindow;
@@ -32,23 +34,26 @@ public:
 private slots:
     void on_selectVideoButton_clicked();
     void on_frameSlider_valueChanged(int value);
+    void on_webcamButton_clicked(bool checked);
     void startLipTracking(Mat* frame);
     void updateBinaryImage(Mat frame);
     void updateFinalImage(Mat frame, QVector<QPoint> lipsPos);
-    void on_webcamButton_clicked(bool checked);
 
 private:
     Ui::MainWindow *ui;
-    VideoCapture video;
-    Mat frame;
 
+    // Frame dimensions
+    Mat frame;
     int bwHeight, bwWidth;
     int finalHeight, finalWidth;
 
-    QCPCurve *lipsCurve;
+    VideoCapture video;
 
-    QThread *webcamThread = 0;
-    WebCamReader *webcam = 0;
+    QCPCurve *lipsCurve     = 0;
+
+    // Webcam reader thread
+    QThread *webcamThread   = 0;
+    WebCamReader *webcam    = 0;
 
 private:
     void setLipsCurve();

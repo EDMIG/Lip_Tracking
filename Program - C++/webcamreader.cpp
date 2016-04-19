@@ -1,7 +1,20 @@
+/* *********************************************
+ * This class is a thread that reads continuously
+ * video frames from a webcam.
+ *
+ * Author: Nordine Sebkhi
+ * *********************************************/
+
 #include "webcamreader.h"
 #include <QCameraInfo>
 #include <QMutexLocker>
 
+/**
+ * @brief Constructor that instantiate a video capture
+ * device as a webcam
+ *
+ * @param parent
+ */
 WebCamReader::WebCamReader(QObject *parent) : QThread(parent)
 {
     // Find index of TTS supported camera in the list of connected cameras
@@ -12,7 +25,7 @@ WebCamReader::WebCamReader(QObject *parent) : QThread(parent)
         // Get the name of the camera
         QString cameraName = cameras.at(i).description();
 
-        // Search if name matches one of TTS camera
+        // Search if name matches one of approved TTS camera model
         if (cameraName.contains("LifeCam") || cameraName.contains("PC CAMERA")) {
             cameraIdx = i;
             break;
@@ -25,7 +38,9 @@ WebCamReader::WebCamReader(QObject *parent) : QThread(parent)
     exec = true;
 }
 
-
+/**
+ * @brief Read video frames from webcam
+ */
 void WebCamReader::run(){
 
     Mat frame;
@@ -42,6 +57,9 @@ void WebCamReader::run(){
     video.release();
 }
 
+/**
+ * @brief Stop reading video frames
+ */
 void WebCamReader::stop() {
     mutex.lock();
     exec = false;

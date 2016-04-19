@@ -1,6 +1,6 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2016-03-19T11:20:41
+# Project created by Nordine Sebkhi
 #
 #-------------------------------------------------
 
@@ -26,7 +26,7 @@ HEADERS  += mainwindow.h \
 FORMS    += mainwindow.ui
 
 
-# OPEN CV
+# Link to shared libs of OPEN CV
 INCLUDEPATH += "C:/dev/OpenCV/OpenCV_3.0_Installer/opencv/build/include"
 
 LIBS += -L"C:/dev/OpenCV/OpenCV_3.0_Installer/Build_Shared_32_bit/lib/Release" \
