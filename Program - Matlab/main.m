@@ -69,6 +69,7 @@ end
 
 % Display lips tracking frames
 figure(lipTrackFig);
+visemes = {'Rest', '/L/', '/O/', '/W/', '/O/', 'Rest'};
 j = 0;
 for i = selectFrames
     j = j + 1;
@@ -77,5 +78,9 @@ for i = selectFrames
     imshow(baseFrames{1,i});
     lipLine = lipLines{1,i};
     plot(lipLine(:,1), lipLine(:,2), '-go', 'LineWidth', 4);
+    
+    ax = gca;
+    ax.Title.String = visemes{j};
+    ax.FontSize = 30;
     hold off;
 end
