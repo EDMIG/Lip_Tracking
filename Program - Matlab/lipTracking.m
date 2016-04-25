@@ -1,4 +1,4 @@
-function lipTracking(rawFrame)
+function [frame, bwFrame, lipLine] = lipTracking(rawFrame)
 
 %% Pre-process frame
 % Resize frame to reduce execution time
@@ -15,19 +15,19 @@ frame = im2double(resizedFrame);
 
 
 %% Identify pixels related to lips 
-outputImage = lipExtraction(frame);
-subplot(1,2,1);
-imshow(outputImage);
+bwFrame = lipExtraction(frame);
+% subplot(1,2,1);
+% imshow(bwFrame);
 
 
 %% Lips segmentation
-lipLine = edgeLocalization(outputImage,frame);
+lipLine = edgeLocalization(bwFrame,frame);
 
-subplot(1,2,2);
-hold on;
-imshow(frame);
-plot(lipLine(:,1), lipLine(:,2), '-go');
-hold off;
+% subplot(1,2,2);
+% hold on;
+% imshow(frame);
+% plot(lipLine(:,1), lipLine(:,2), '-go');
+% hold off;
 
 end
 
